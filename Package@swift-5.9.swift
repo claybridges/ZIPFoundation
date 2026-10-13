@@ -4,6 +4,19 @@ import PackageDescription
 let zlibPlatforms: [Platform] = [.linux, .android, .windows]
 let unixZlibPlatforms: [Platform] = [.linux, .android]
 
+// CZLib is only used on zlibPlatforms, but SwiftPM probes pkg-config for every
+// declared systemLibrary. On an Apple host that probe is useless (it can only
+// find the host's zlib) and warns when pkg-config is missing, so skip it there.
+// The target itself stays declared so cross-compiling from a Mac still works.
+#if canImport(Darwin)
+let czlib: Target = .systemLibrary(name: "CZLib")
+#else
+let czlib: Target = .systemLibrary(
+    name: "CZLib",
+    pkgConfig: "zlib",
+    providers: [.brew(["zlib"]), .apt(["zlib"])])
+#endif
+
 let package = Package(
     name: "ZIPFoundation",
     platforms: [
@@ -28,10 +41,7 @@ let package = Package(
                 .linkedLibrary("z", .when(platforms: unixZlibPlatforms)),
                 .linkedLibrary("zlib", .when(platforms: [.windows]))
             ]),
-        .systemLibrary(
-            name: "CZLib",
-            pkgConfig: "zlib",
-            providers: [.brew(["zlib"]), .apt(["zlib"])]),
+        czlib,
         .testTarget(name: "ZIPFoundationTests", dependencies: ["ZIPFoundation"])
     ],
     swiftLanguageVersions: [.v4, .v4_2, .v5]
