@@ -1,4 +1,7 @@
 // swift-tools-version:5.9
+
+// NOTE: This manifest applies only to Xcodes 15-26.
+
 import PackageDescription
 
 let zlibPlatforms: [Platform] = [.linux, .android, .windows]
