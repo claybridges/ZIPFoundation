@@ -4,6 +4,17 @@ import PackageDescription
 let zlibPlatforms: [Platform] = [.linux, .android, .windows]
 let unixZlibPlatforms: [Platform] = [.linux, .android]
 
+/// Restrict `pkg-config` probes by SwiftPM to `zlibPlatforms`. This excludes macOS, where it is unnecessary, and
+/// generates a warning when compiling for Apple platforms.
+#if canImport(Darwin)
+let czlib: Target = .systemLibrary(name: "CZLib")
+#else
+let czlib: Target = .systemLibrary(
+    name: "CZLib",
+    pkgConfig: "zlib",
+    providers: [.brew(["zlib"]), .apt(["zlib"])])
+#endif
+
 let package = Package(
     name: "ZIPFoundation",
     platforms: [
@@ -28,10 +39,7 @@ let package = Package(
                 .linkedLibrary("z", .when(platforms: unixZlibPlatforms)),
                 .linkedLibrary("zlib", .when(platforms: [.windows]))
             ]),
-        .systemLibrary(
-            name: "CZLib",
-            pkgConfig: "zlib",
-            providers: [.brew(["zlib"]), .apt(["zlib"])]),
+        czlib,
         .testTarget(name: "ZIPFoundationTests", dependencies: ["ZIPFoundation"])
     ],
     swiftLanguageVersions: [.v4, .v4_2, .v5]
